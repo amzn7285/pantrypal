@@ -166,7 +166,7 @@
     let ingredients = [];
     let currentMissingItems = [];
     
-    // Shopping platforms by country
+    // Shopping platforms by country - FIXED FOR INDIA
     const shoppingPlatforms = {
       "in": [
         { name: "Blinkit", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Blinkit_logo.svg/512px-Blinkit_logo.svg.png", url: "https://blinkit.com/s/?q=" },
@@ -176,21 +176,10 @@
         { name: "JioMart", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/JioMart_logo.svg/512px-JioMart_logo.svg.png", url: "https://www.jiomart.com/search/?text=" },
         { name: "Amazon Fresh", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/512px-Amazon_logo.svg.png", url: "https://www.amazon.in/s?k=" }
       ],
-      "us": [
-        { name: "Instacart", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Instacart_logo.svg/512px-Instacart_logo.svg.png", url: "https://www.instacart.com/store/search?q=" },
-        { name: "Amazon Fresh", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/512px-Amazon_logo.svg.png", url: "https://www.amazon.com/s?k=" },
-        { name: "Walmart", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Walmart_logo.svg/512px-Walmart_logo.svg.png", url: "https://www.walmart.com/search?q=" }
-      ],
-      "gb": [
-        { name: "Ocado", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Ocado_logo.svg/512px-Ocado_logo.svg.png", url: "https://www.ocado.com/search?entry=" },
-        { name: "Tesco", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Tesco_logo.svg/512px-Tesco_logo.svg.png", url: "https://www.tesco.com/groceries/en-GB/search?query=" }
-      ],
-      "ca": [
-        { name: "Voila", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Voila_logo.svg/512px-Voila_logo.svg.png", url: "https://www.voilagrocery.ca/search?searchTerm=" },
-        { name: "Walmart Canada", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Walmart_logo.svg/512px-Walmart_logo.svg.png", url: "https://www.walmart.ca/search?q=" }
-      ],
       "default": [
-        { name: "Google Search", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_logo.svg/512px-Google_logo.svg.png", url: "https://www.google.com/search?q=" }
+        { name: "Blinkit", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Blinkit_logo.svg/512px-Blinkit_logo.svg.png", url: "https://blinkit.com/s/?q=" },
+        { name: "Zepto", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Zepto_Logo.svg/512px-Zepto_Logo.svg.png", url: "https://zepto.com/search?q=" },
+        { name: "Swiggy Instamart", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Swiggy_Logo.svg/512px-Swiggy_Logo.svg.png", url: "https://www.swiggy.com/instamart/search?query=" }
       ]
     };
 
@@ -521,12 +510,8 @@
     function showShoppingModal(items) {
       currentMissingItems = items.split(',');
       
-      // Detect country
-      const userLang = navigator.language || navigator.userLanguage;
-      const countryCode = userLang.split('-')[1]?.toLowerCase() || 'in';
-      
-      // Get platforms for country
-      const platforms = shoppingPlatforms[countryCode] || shoppingPlatforms['default'];
+      // FIXED: Always use Indian platforms for this app
+      const platforms = shoppingPlatforms["in"];
       
       // Build modal content
       const itemsText = currentMissingItems.join(', ');
@@ -561,12 +546,7 @@
     function openSelectedStore() {
       if (selectedPlatformIndex === null) return;
       
-      // Detect country
-      const userLang = navigator.language || navigator.userLanguage;
-      const countryCode = userLang.split('-')[1]?.toLowerCase() || 'in';
-      
-      // Get platforms for country
-      const platforms = shoppingPlatforms[countryCode] || shoppingPlatforms['default'];
+      const platforms = shoppingPlatforms["in"];
       
       const platform = platforms[selectedPlatformIndex];
       const searchQuery = currentMissingItems.join('+');
