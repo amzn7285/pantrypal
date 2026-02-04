@@ -51,11 +51,30 @@
     .app-footer { text-align: center; margin-top: 30px; color: var(--gray); font-size: 14px; padding: 15px; }
     .app-footer a { color: var(--primary); text-decoration: none; }
     .app-footer a:hover { text-decoration: underline; }
+    
+    /* Shopping Modal Styles */
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+    .modal-overlay.active { opacity: 1; pointer-events: all; }
+    .modal { background: white; border-radius: 16px; padding: 30px; max-width: 450px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); max-height: 80vh; overflow-y: auto; }
+    .modal h3 { margin: 0 0 20px 0; color: var(--secondary); font-size: 24px; text-align: center; }
+    .modal p { margin: 0 0 25px 0; color: var(--gray); text-align: center; font-size: 15px; }
+    .shopping-options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px; }
+    .shopping-option { background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; transition: all 0.2s; }
+    .shopping-option:hover { background: #e7f3ff; border-color: var(--primary); transform: translateY(-2px); }
+    .shopping-option.active { background: #e3f2fd; border-color: var(--primary); }
+    .shopping-option img { width: 50px; height: 50px; object-fit: contain; margin-bottom: 10px; }
+    .shopping-option .name { font-weight: 600; font-size: 15px; color: var(--dark); margin-top: 5px; display: block; }
+    .modal-buttons { display: flex; gap: 12px; }
+    .modal-buttons button { flex: 1; padding: 14px; font-size: 16px; border-radius: 10px; }
+    .close-modal { background: #6c757d; }
+    .close-modal:hover { background: #5a6268; }
+    
     @media (max-width: 480px) {
       .container { padding: 20px 18px; }
       .header h1 { font-size: 24px; }
       input, select, button { padding: 13px; font-size: 15px; }
       .ingredient-tag { padding: 7px 14px; font-size: 14px; }
+      .shopping-options { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -125,10 +144,56 @@
   <div class="app-footer">
     <p>✨ Made with ❤️ by PantryPal • <a href="#" onclick="showPrivacy()">Privacy Policy</a></p>
   </div>
+  
+  <!-- Shopping Modal -->
+  <div id="shoppingModal" class="modal-overlay">
+    <div class="modal">
+      <h3>🛒 Order Missing Items</h3>
+      <p id="modalItemsText">Choose your preferred delivery app:</p>
+      
+      <div class="shopping-options" id="shoppingOptions">
+        <!-- Options will be populated by JavaScript -->
+      </div>
+      
+      <div class="modal-buttons">
+        <button class="close-modal" onclick="closeShoppingModal()">Cancel</button>
+        <button class="success" onclick="openSelectedStore()" id="confirmOrderBtn" disabled>Continue</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     let ingredients = [];
+    let currentMissingItems = [];
     
+    // Shopping platforms by country
+    const shoppingPlatforms = {
+      "in": [
+        { name: "Blinkit", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Blinkit_logo.svg/512px-Blinkit_logo.svg.png", url: "https://blinkit.com/s/?q=" },
+        { name: "Zepto", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Zepto_Logo.svg/512px-Zepto_Logo.svg.png", url: "https://zepto.com/search?q=" },
+        { name: "Swiggy Instamart", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Swiggy_Logo.svg/512px-Swiggy_Logo.svg.png", url: "https://www.swiggy.com/instamart/search?query=" },
+        { name: "BigBasket", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/BigBasket_logo.svg/512px-BigBasket_logo.svg.png", url: "https://www.bigbasket.com/ps/?q=" },
+        { name: "JioMart", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/JioMart_logo.svg/512px-JioMart_logo.svg.png", url: "https://www.jiomart.com/search/?text=" },
+        { name: "Amazon Fresh", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/512px-Amazon_logo.svg.png", url: "https://www.amazon.in/s?k=" }
+      ],
+      "us": [
+        { name: "Instacart", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Instacart_logo.svg/512px-Instacart_logo.svg.png", url: "https://www.instacart.com/store/search?q=" },
+        { name: "Amazon Fresh", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/512px-Amazon_logo.svg.png", url: "https://www.amazon.com/s?k=" },
+        { name: "Walmart", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Walmart_logo.svg/512px-Walmart_logo.svg.png", url: "https://www.walmart.com/search?q=" }
+      ],
+      "gb": [
+        { name: "Ocado", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Ocado_logo.svg/512px-Ocado_logo.svg.png", url: "https://www.ocado.com/search?entry=" },
+        { name: "Tesco", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Tesco_logo.svg/512px-Tesco_logo.svg.png", url: "https://www.tesco.com/groceries/en-GB/search?query=" }
+      ],
+      "ca": [
+        { name: "Voila", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Voila_logo.svg/512px-Voila_logo.svg.png", url: "https://www.voilagrocery.ca/search?searchTerm=" },
+        { name: "Walmart Canada", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Walmart_logo.svg/512px-Walmart_logo.svg.png", url: "https://www.walmart.ca/search?q=" }
+      ],
+      "default": [
+        { name: "Google Search", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_logo.svg/512px-Google_logo.svg.png", url: "https://www.google.com/search?q=" }
+      ]
+    };
+
     // 50+ REAL RECIPES DATABASE
     const recipesData = {
       "indian": {
@@ -431,7 +496,7 @@
               </div>
               
               ${missing.length > 0 ? `
-                <button class="order-btn" onclick="orderItems('${missing.map(m => m.split(' ')[0]).join(',')}')">
+                <button class="order-btn" onclick="showShoppingModal('${missing.map(m => m.split(' ')[0]).join(',')}')">
                   🛒 Order ${missing.length} Missing Item${missing.length > 1 ? 's' : ''}
                 </button>
               ` : `
@@ -453,28 +518,68 @@
       document.getElementById('step3').classList.remove('hidden');
     }
 
-    function orderItems(items) {
-      const itemArray = items.split(',').map(i => i.trim());
-      const searchQuery = itemArray.join('+');
+    function showShoppingModal(items) {
+      currentMissingItems = items.split(',');
       
+      // Detect country
       const userLang = navigator.language || navigator.userLanguage;
       const countryCode = userLang.split('-')[1]?.toLowerCase() || 'in';
       
-      let shoppingUrl = '';
+      // Get platforms for country
+      const platforms = shoppingPlatforms[countryCode] || shoppingPlatforms['default'];
       
-      if (countryCode === 'in') {
-        shoppingUrl = `https://blinkit.com/s/?q=${searchQuery}`;
-      } else if (countryCode === 'us') {
-        shoppingUrl = `https://www.instacart.com/store/search?q=${searchQuery}`;
-      } else if (countryCode === 'gb') {
-        shoppingUrl = `https://www.ocado.com/search?entry=${searchQuery}`;
-      } else if (countryCode === 'ca') {
-        shoppingUrl = `https://www.voilagrocery.ca/search?searchTerm=${searchQuery}`;
-      } else {
-        shoppingUrl = `https://www.google.com/search?q=${searchQuery}+buy+online`;
-      }
+      // Build modal content
+      const itemsText = currentMissingItems.join(', ');
+      document.getElementById('modalItemsText').textContent = `Missing: ${itemsText}\n\nChoose your preferred delivery app:`;
       
-      window.open(shoppingUrl, '_blank', 'noopener,noreferrer');
+      const optionsContainer = document.getElementById('shoppingOptions');
+      optionsContainer.innerHTML = platforms.map((platform, index) => `
+        <div class="shopping-option" onclick="selectShoppingPlatform(${index})" data-index="${index}">
+          <img src="${platform.logo}" alt="${platform.name}" onerror="this.style.display='none'">
+          <span class="name">${platform.name}</span>
+        </div>
+      `).join('');
+      
+      // Show modal
+      document.getElementById('shoppingModal').classList.add('active');
+      document.getElementById('confirmOrderBtn').disabled = true;
+    }
+
+    let selectedPlatformIndex = null;
+
+    function selectShoppingPlatform(index) {
+      // Remove active class from all
+      document.querySelectorAll('.shopping-option').forEach(el => el.classList.remove('active'));
+      
+      // Add active class to selected
+      event.currentTarget.classList.add('active');
+      
+      selectedPlatformIndex = index;
+      document.getElementById('confirmOrderBtn').disabled = false;
+    }
+
+    function openSelectedStore() {
+      if (selectedPlatformIndex === null) return;
+      
+      // Detect country
+      const userLang = navigator.language || navigator.userLanguage;
+      const countryCode = userLang.split('-')[1]?.toLowerCase() || 'in';
+      
+      // Get platforms for country
+      const platforms = shoppingPlatforms[countryCode] || shoppingPlatforms['default'];
+      
+      const platform = platforms[selectedPlatformIndex];
+      const searchQuery = currentMissingItems.join('+');
+      const url = platform.url + searchQuery;
+      
+      window.open(url, '_blank', 'noopener,noreferrer');
+      closeShoppingModal();
+    }
+
+    function closeShoppingModal() {
+      document.getElementById('shoppingModal').classList.remove('active');
+      selectedPlatformIndex = null;
+      document.getElementById('confirmOrderBtn').disabled = true;
     }
 
     function resetApp() {
